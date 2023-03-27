@@ -18,6 +18,7 @@ import tornado
 import tornado.locks
 from jupyter_server.utils import ensure_async
 from nbdime import diff_notebooks, merge_notebooks
+from jupyterlab.services.dialog import showDialog
 
 from .log import get_logger
 
@@ -1157,22 +1158,30 @@ class Git:
         """
         Execute git init command & return the result.
         """
-        cmd = ["git", "init"]
-        cwd = path
-        code, _, error = await execute(cmd, cwd=cwd)
+        if self.cwd == 'D:/Hex_SCHED/test/a/jupyterlab-git':
+            message = 'Cannot create a Git repository in the top-level directory.'
+            options = {'title': 'Restricted Directory'}
+            showDialog({ 'message': message }, options=options)
+            return
+        
+        else:
+            cmd = ["git", "init"]
+            cwd = path
+            code, _, error = await execute(cmd, cwd=cwd)
 
-        actions = None
-        if code == 0:
-            code, actions = await self._maybe_run_actions("post_init", cwd)
+            actions = None
+            if code == 0:
+                code, actions = await self._maybe_run_actions("post_init", cwd)
 
-        if code != 0:
-            return {
+            if code != 0:
+                return {
                 "code": code,
                 "command": " ".join(cmd),
                 "message": error,
                 "actions": actions,
             }
-        return {"code": code, "actions": actions}
+            
+            return {"code": code, "actions": actions}
 
     async def _maybe_run_actions(self, name, cwd):
         code = 0
